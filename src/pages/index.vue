@@ -6,11 +6,9 @@
         </v-tab>
       </v-tabs>
       <v-divider />
-      <v-window v-model="activeTab" class="mt-5 disable-tab-transition" :touch="false">
-        <v-window-item value="leave">
-          <leave/>
-        </v-window-item>
-      </v-window>
+      <div class="mt-4">
+        <leave v-if="activeTab == 'leave'"/>
+      </div>
     </div>
 </template>
 <script>

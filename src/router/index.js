@@ -1,6 +1,7 @@
 import { setupLayouts } from 'virtual:generated-layouts'
 import { createRouter, createWebHistory } from 'vue-router'
 import routes from '~pages'
+import store from "@/store";
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -12,26 +13,17 @@ const router = createRouter({
     },
     ...setupLayouts(routes),
   ],
-  scrollBehavior() {
-    return { top: 0 }
-  },
 })
 
 router.beforeEach((to, from, next) => {
-  console.log(to)
-  next();
-  // let signedIn = store.state.signedIn;
-  // let goTo = store.state.goTo;
-  // let pageAccess = store.state.access;
-  // if (to.meta.auth && !signedIn) {
-  //   next({name: "Sign In"});
-  // }else if (signedIn && to.meta.page && !pageAccess.includes(to.meta.page)){
-  //   next(goTo);
-  // }else if (!to.meta.auth && signedIn){
-  //   next(goTo);
-  // }else {
-  //   next();
-  // }
+  let signedIn = store.state.signedIn;
+  if(to.meta.auth && !signedIn) {
+    next("/login");
+  }else if (!to.meta.auth && signedIn){
+    next(from);
+  }else {
+    next();
+  }
 })
 
 export default router

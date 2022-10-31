@@ -6,6 +6,7 @@ export default createStore({
     currentUser: {},
     csrf: null,
     signedIn: false,
+    serverUrl: "http://localhost:3010"
   },
   mutations: {
     refresh(state, {csrf}){

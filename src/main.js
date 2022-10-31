@@ -13,10 +13,10 @@ import { createApp } from 'vue'
 
 loadFonts()
 const app = createApp(App)
+app.config.globalProperties.$plain = {...plainAxiosInstance}; 
+app.config.globalProperties.$secured = {...securedAxiosInstance};
 app.use(vuetify)
 app.use(createPinia())
 app.use(router)
 app.use(store);
-app.config.globalProperties.$plain = {...plainAxiosInstance}; 
-app.config.globalProperties.$secured = {...securedAxiosInstance};
 app.mount('#app')

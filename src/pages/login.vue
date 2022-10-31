@@ -1,7 +1,7 @@
 <template>
   <div class="auth-wrapper d-flex align-center justify-center pa-4">
     <VCard
-      class="auth-card pa-4 pt-7"
+      class="auth-card pa-3 pt-5"
       max-width="448"
     >
       <VCardItem class="justify-center">
@@ -15,17 +15,22 @@
           Please sign-in to your account.
         </p>
       </VCardText>
-
       <VCardText>
-        <VForm @submit.prevent="() => {}">
+        <VForm 
+          ref="form"
+          v-model="valid"
+          lazy-validation
+        >
           <VRow>
             <!-- email -->
             <VCol cols="12">
               <VTextField
-                v-model="form.email"
+                v-model="form.employee_id"
                 label="Employee UID"
                 type="text"
                 color="info"
+                :disabled="loading"
+                :rules="[v => !!v || 'UID is required']"
               />
             </VCol>
 
@@ -38,14 +43,17 @@
                 :append-inner-icon="isPasswordVisible ? 'mdi-eye-off-outline' : 'mdi-eye-outline'"
                 @click:append-inner="isPasswordVisible = !isPasswordVisible"
                 color="info"
+                :disabled="loading"
+                :rules="[v => !!v || 'Password is required']"
               />
 
               <!-- remember me checkbox -->
               <div class="d-flex align-center justify-space-between flex-wrap mt-1 mb-4">
                 <VCheckbox
-                  v-model="form.remember"
+                  v-model="remember"
                   label="Remember me"
                   color="info"
+                  :disabled="loading"
                 />
                 <a
                   class="ms-2 mb-1 text-info"
@@ -54,14 +62,7 @@
                   Forgot Password?
                 </a>
               </div>
-
-              <!-- login button -->
-              <VBtn
-                block
-                type="submit"
-                to="/"
-                color="info"
-              >
+              <VBtn :loading="loading" @click.prevent="login" block type="submit" color="info">
                 Login
               </VBtn>
             </VCol>
@@ -72,28 +73,41 @@
   </div>
 </template>
 
-<script setup>
+<script>
 import { useTheme } from 'vuetify'
 import logo from '@/assets/logo.svg?raw'
-import AuthProvider from '@/views/pages/authentication/AuthProvider.vue'
-import authV1MaskDark from '@/assets/images/pages/auth-v1-mask-dark.png'
-import authV1MaskLight from '@/assets/images/pages/auth-v1-mask-light.png'
 
-const form = ref({
-  email: '',
-  password: '',
-  remember: false,
-})
-
-const vuetifyTheme = useTheme()
-const authThemeMask = computed(() => {
-  return vuetifyTheme.global.name.value === 'light' ? authV1MaskLight : authV1MaskDark
-})
-const isPasswordVisible = ref(false)
+export default {
+  name: "login",
+  data(){
+    return {
+      form: {employee_id: "", password: ""},
+      remember: false,
+      valid: true,
+      isPasswordVisible: false,
+      loading: false,
+    }
+  },
+  methods: {
+    async login(){
+      const { valid } = await this.$refs.form.validate()
+      if (!valid) return
+      this.loading = true
+      try{
+        const res = await this.$plain.post("api/v2/signin", this.form)
+        this.$store.commit("setCurrentUser", { currentUser: res.data.employee, csrf: res.data.csrf});
+        this.$router.replace("/request")
+      }catch(error){
+        console.log(error.response)
+      }
+      this.loading = false
+    }
+  },
+}
 </script>
 
 <style lang="scss">
-@use "@core/scss/pages/page-auth.scss";
+  @use "@core/scss/pages/page-auth.scss";
 </style>
 
 <route lang="yaml">
