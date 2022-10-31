@@ -70,6 +70,9 @@
       />
     </v-card-text>
   </v-card>
+  <div>
+    <a-drawer></a-drawer>
+  </div>
 </template>
 
 <script>

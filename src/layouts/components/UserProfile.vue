@@ -2,7 +2,6 @@
   <VAvatar
     style="cursor: pointer;"
     color="info"
-    variant="tonal"
   >
     <v-icon icon="mdi-user"></v-icon>
     <!-- SECTION Menu -->
@@ -20,7 +19,6 @@
               <VAvatar
                   color="info"
                   size="40"
-                  variant="tonal"
                 >
                   <v-icon icon="mdi-user"></v-icon>
               </VAvatar>
