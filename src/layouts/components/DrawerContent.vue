@@ -17,13 +17,10 @@ const upgradeBanner = computed(() => {
   <div class="nav-header">
     <RouterLink
       to="/"
-      class="app-logo d-flex align-center gap-x-3 app-title-wrapper"
+      class="app-logo d-flex align-center justify-center gap-x-3 app-title-wrapper"
     >
-      <div v-html="logo" />
       <Transition name="vertical-nav-app-title">
-        <h1 class="font-weight-semibold leading-normal text-xl text-uppercase">
-          PMS-ERS
-        </h1>
+        <img style="width: 45px" src="@/assets/logo.png" />
       </Transition>
     </RouterLink>
   </div>

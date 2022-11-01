@@ -275,6 +275,7 @@ export default {
         this.selectionRequiredMsg = "required"
       }
       if (!this.date || !valid) {
+        this.crudLoading = false
         return
       }
       let params = {
@@ -312,6 +313,7 @@ export default {
         this.selectionRequiredMsg = "required"
       }
       if (!this.date || !valid) {
+        this.crudLoading = false
         return
       }
       let params = {
@@ -397,7 +399,7 @@ export default {
     color: rgb(22,177,255)
   }
   tr > td {
-    max-width: 150px;
+    max-width: 300px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
