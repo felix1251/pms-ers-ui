@@ -25,21 +25,14 @@
             </VListItemAction>
           </template>
           <VListItemTitle class="font-weight-semibold">
-            Felix G. Abacajen Jr.
+            {{currentUser.fullname}}
           </VListItemTitle>
           <VListItemSubtitle class="text-disabled">
             Employee
           </VListItemSubtitle>
         </VListItem>
         <VDivider class="my-2" />
-        <VListItem to="/login">
-          <template #prepend>
-            <VIcon
-              class="me-2"
-              icon="mdi-logout-variant"
-              size="22"
-            />
-          </template>
+        <VListItem @click.prevent="logout">
           <VListItemTitle>Logout</VListItemTitle>
         </VListItem>
       </VList>
@@ -48,6 +41,7 @@
 </template>
 
 <script>
+import { mapState } from "vuex";
 export default {
   name: "user-profile",
   data(){
@@ -62,5 +56,20 @@ export default {
       }
     }
   },
+  methods: {
+    logout(){
+      this.$secured.delete("api/v2/signin")
+        .then((response) => {
+          this.$store.commit("unsetCurrentUser");
+          this.$router.replace("/login");
+        })
+        .catch((error) => {
+          console.log(error)
+        });
+    }
+  },
+  computed: {
+    ...mapState(["currentUser"]),
+  }
 }
 </script>

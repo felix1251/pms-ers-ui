@@ -2,7 +2,7 @@
   <v-card>
     <template #title>
       <div class="d-flex gap-3 space-between align-center">
-        <span>LEAVE</span>
+        <span>OVERTIME</span>
         <v-icon 
           @click.prevent="openModal('A')" 
           class="table-icon" 
@@ -27,10 +27,10 @@
           <thead>
             <tr>
               <th class="text-left">Date Filed</th>
-              <th class="text-left">Inclusive Dates</th>
-              <th class="text-left">Days</th>
-              <th class="text-left">Type</th>
-              <th class="text-left">Reason</th>
+              <th class="text-left">Overtime Date/end_time</th>
+              <th class="text-left">Hours</th>
+              <th class="text-left">Billable</th>
+              <th class="text-left">Expected Output</th>
               <th class="text-left">Status</th>
               <th class="text-left text-center">Actions</th>
             </tr>
@@ -41,10 +41,17 @@
               :key="item.id"
             >
               <td>{{ item.date_filed }}</td>
-              <td>{{ item.inclusive_date }}</td>
-              <td>{{ item.days }}</td>
-              <td>{{ item.type }}</td>
-              <td>{{ item.reason }}</td>
+              <td>{{ item.datetime }}</td>
+              <td>{{ item.hours }}</td>
+              <td>
+                <v-chip v-if="item.billable" variant="outlined" color="success">
+                  Yes
+                </v-chip>
+                <v-chip v-else variant="outlined" color="error">
+                  No
+                </v-chip>
+              </td>
+              <td>{{ item.output }}</td>
               <td>
                 <v-chip v-if="item.status == 'P'" variant="outlined" color="primary">
                   Pending
@@ -180,7 +187,7 @@ import dayjs from "dayjs"
 const formDefault = { leave_type: null, reason: null, half_day: false}
 import { Modal } from 'ant-design-vue';
 export default {
-  name: "leave",
+  name: "overtime",
   data(){
     return {
       page: 1,
@@ -214,11 +221,11 @@ export default {
     },
     page(value){
       this.page = value
-      this.getLeaves()
+      this.getOvertimes()
     }
   },
   mounted() {
-    this.getLeaves()
+    this.getOvertimes()
   },
   methods: {
     openModal(type, id){
@@ -226,11 +233,11 @@ export default {
       this.modal = true
       this.getTypeOfLeaves()
       if(type == 'V' || type == 'E'){
-        if(type == 'V') this.modalTitle = "VIEW LEAVE"
-        if(type == 'E') this.modalTitle = "EDIT LEAVE"
+        if(type == 'V') this.modalTitle = "VIEW OVERTIME"
+        if(type == 'E') this.modalTitle = "EDIT OVERTIME"
         this.getLeaveById(id)
       }else{
-        this.modalTitle = "CREATE LEAVE"
+        this.modalTitle = "CREATE OVERTIME"
       }
     },
     closeModal(){
@@ -253,7 +260,7 @@ export default {
               .then(()=>{
                 this.$notification["success"]({message: "Leave", description: "Leave successfully voided"});
                 resolve()
-                this.getLeaves()
+                this.getOvertimes()
               })
               .catch(error => {
                 reject()
@@ -288,7 +295,7 @@ export default {
         const res = await this.$secured.put("api/v2/leaves/"+this.form.id, {leave: params})
         this.$notification["success"]({message: "Leave", description: "Leave successfully created"});
         this.closeModal()
-        this.getLeaves()
+        this.getOvertimes()
       }catch (error){
         this.crudLoading = false
         if(error.response && error.response.status == 401) return
@@ -325,7 +332,7 @@ export default {
         const res = await this.$secured.post("api/v2/leaves", {leave: params})
         this.$notification["success"]({message: "Leave", description: "Leave successfully created"});
         this.closeModal()
-        this.getLeaves()
+        this.getOvertimes()
       }catch (error){
         this.crudLoading = false
         if(error.response && error.response.status == 401) return
@@ -360,10 +367,10 @@ export default {
         console.log(error.response)
       }
     },
-    async getLeaves(){
+    async getOvertimes(){
       document.getElementById("overlay").style.display = "block" 
       try{
-        const res = await this.$secured.get("api/v2/leaves?page="+this.page+"&per_page="+this.perPage)
+        const res = await this.$secured.get("api/v2/overtimes?page="+this.page+"&per_page="+this.perPage)
         this.data = res.data.data
         this.generateLength(res.data.total_count)
       }catch(error){

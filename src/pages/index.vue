@@ -8,11 +8,13 @@
       <v-divider />
       <div class="mt-4">
         <leave v-if="activeTab == 'leave'"/>
+        <overtime v-if="activeTab == 'overtime'"/>
       </div>
     </div>
 </template>
 <script>
 import Leave from '@/views/pages/request/Leave.vue'
+import Overtime from '@/views/pages/request/Overtime.vue'
 export default {
   name: "index",
   data(){
@@ -44,6 +46,7 @@ export default {
   },
   components: {
     Leave,
+    Overtime,
   }
 }
 </script>

@@ -7,24 +7,16 @@
       </VTab>
     </VTabs>
     <VDivider />
-    <VWindow v-model="activeTab" class="mt-5 disable-tab-transition" :touch="false">
-      <VWindowItem value="account">
-        <AccountSettingsAccount />
-      </VWindowItem>
-      <VWindowItem value="security">
-        <AccountSettingsSecurity />
-      </VWindowItem>
-      <VWindowItem value="notification">
-        <AccountSettingsNotification />
-      </VWindowItem>
-    </VWindow>
+    <div class="mt-5">
+      <AccountSettingsAccount v-if="activeTab == 'account'"/>
+      <AccountSettingsSecurity v-if="activeTab == 'security'"/>
+    </div>
   </div>
 </template>
 
 <script>
 import { useRoute } from 'vue-router'
 import AccountSettingsAccount from '@/views/pages/account/AccountSettingsAccount.vue'
-import AccountSettingsNotification from '@/views/pages/account/AccountSettingsNotification.vue'
 import AccountSettingsSecurity from '@/views/pages/account/AccountSettingsSecurity.vue'
 
 export default {
@@ -48,7 +40,6 @@ export default {
   },
   components: {
     AccountSettingsAccount,
-    AccountSettingsNotification,
     AccountSettingsSecurity,
   }
 }
