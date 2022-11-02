@@ -17,11 +17,14 @@
 import Leave from '@/views/pages/request/Leave.vue'
 import Overtime from '@/views/pages/request/Overtime.vue'
 import Offset from '@/views/pages/request/Offset.vue'
+import { useRoute } from 'vue-router';
 export default {
   name: "index",
   data(){
     return {
       activeTab: "leave",
+      currRoute: null,
+      init: 0,
       tabs: [
         {
           title: 'Leave',
@@ -44,6 +47,16 @@ export default {
           tab: 'official-business',
         },
       ]
+    }
+  },
+  created(){
+    const route = useRoute()
+    if(route.query.tab) this.activeTab = route.query.tab
+    this.$router.replace({query: {tab: this.activeTab}})
+  },
+  watch: {
+    activeTab(){
+      this.$router.replace({query: {tab: this.activeTab}})
     }
   },
   components: {

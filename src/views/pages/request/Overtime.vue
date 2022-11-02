@@ -229,7 +229,7 @@ export default {
       Modal.confirm({
         title: 'Void Overtime',
         zIndex: 999999999,
-        content: "Are you sure you want to permanently void this void?",
+        content: "Are you sure you want to permanently void this overtime?",
         okText: "Void",
         // eslint-disable-next-line @typescript-eslint/no-empty-function
         onOk: () => {

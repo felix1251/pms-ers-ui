@@ -62,7 +62,7 @@
               <td class="text-center">
                 <VIcon class="table-icon" @click.prevent="openModal('V', item.id)"  size="20" start icon="mdi-eye"/>
                 <VIcon class="table-icon" @click.prevent="openModal('E', item.id)" v-if="item.status == 'P'" size="20" start icon="mdi-edit"/>
-                <VIcon class="table-icon" @click.prevent="voidOvertime(item.id)" v-if="item.status == 'P'" size="20" start icon="mdi-close-box"/>
+                <VIcon class="table-icon" @click.prevent="voideOffset(item.id)" v-if="item.status == 'P'" size="20" start icon="mdi-close-box"/>
               </td>
             </tr>
           </tbody>
@@ -95,7 +95,6 @@
                     v-model:value="date"
                     format="MMMM DD, YYYY"
                     :disabled="modalType == 'V'"
-                    :rules="[v => !!v || 'required']"
                     :getPopupContainer="(trigger) => trigger.parentNode"
                     allowClear
                   />
@@ -195,7 +194,7 @@ export default {
   },
   methods: {
     openModal(type, id){
-      if(this.credits == 0){
+      if(this.credits < 8){
         this.$notification["warning"]({message: "Offset Credit", description: "Insufficient Credit, add non-billable overtime first"})
         return
       }
@@ -216,25 +215,26 @@ export default {
       this.selectionRequired = false
       this.selectionRequiredMsg = ""
     },
-    voidOvertime(id){
+    voideOffset(id){
       Modal.confirm({
-        title: 'Void Overtime',
+        title: 'Void Offset',
         zIndex: 999999999,
-        content: "Are you sure you want to permanently void this void?",
+        content: "Are you sure you want to permanently void this offset?",
         okText: "Void",
         // eslint-disable-next-line @typescript-eslint/no-empty-function
         onOk: () => {
           return new Promise((resolve, reject) => {
-            this.$secured.delete("api/v2/overtimes/"+id)
+            this.$secured.delete("api/v2/offsets/"+id)
               .then(()=>{
-                this.$notification["success"]({message: "Overtime", description: "Overtime successfully voided"});
+                this.$notification["success"]({message: "Offset", description: "Offset successfully voided"});
                 resolve()
                 this.getOffsets()
+                this.getRemainingCredits()
               })
               .catch(error => {
                 reject()
                 if(error.response && error.response.status == 401) return
-                this.$notification["error"]({message: "Overtime", description: "Something is wrong"})
+                this.$notification["error"]({message: "Offset", description: "Something is wrong"})
               })
           }).catch(() => console.log('Oops errors!'));
         },
@@ -252,25 +252,24 @@ export default {
       if (!this.date || !valid) return
       this.crudLoading = true
       let params = {
-        start_date: new Date(this.date[0]),
-        end_date: new Date(this.date[1]),
-        output: this.form.output,
-        billable: this.form.billable
+        offset_date: new Date(this.date).toLocaleDateString("sv"),
+        reason: this.form.reason,
       }
       try{
-        const res = await this.$secured.put("api/v2/overtimes/"+this.form.id, {overtime: params})
-        this.$notification["success"]({message: "Overtime", description: "Overtime successfully created"});
+        const res = await this.$secured.put("api/v2/offsets/"+this.form.id, {offset: params})
+        this.$notification["success"]({message: "Offset", description: "Offset successfully created"});
         this.closeModal()
         this.getOffsets()
+        this.getRemainingCredits()
       }catch (error){
         this.crudLoading = false
         if(error.response && error.response.status == 401) return
-        if (error.response.data.end_date) { 
+        if (error.response.data.offset_date) { 
           this.selectionRequired = true 
           this.selectionRequiredMsg = "date range overlapse or exist on previous records"
-          this.$notification["error"]({message: "Overtime", description: error.response.data.end_date[0]})
+          this.$notification["error"]({message: "Offset", description: error.response.data.offset_date[0]})
         }else {
-          this.$notification["error"]({message: "Overtime", description: "something is wrong"})
+          this.$notification["error"]({message: "Offset", description: "something is wrong"})
         }
       }
       this.crudLoading = false
@@ -289,23 +288,27 @@ export default {
         return
       }
       let params = {
-        offset_date: new Date(this.date[0]),
+        offset_date: new Date(this.date).toLocaleDateString("sv"),
         reason: this.form.reason,
       }
       try{
-        const res = await this.$secured.post("api/v2/overtimes", {overtime: params})
-        this.$notification["success"]({message: "Overtime", description: "Overtime successfully created"});
+        const res = await this.$secured.post("api/v2/offsets", {offset: params})
+        this.$notification["success"]({message: "Offsets", description: "Overtime successfully created"});
         this.closeModal()
         this.getOffsets()
+        this.getRemainingCredits()
       }catch (error){
         this.crudLoading = false
         if(error.response && error.response.status == 401) return
-        if (error.response.data.end_date) { 
+        if (error.response.data.offset_date) { 
           this.selectionRequired = true
           this.selectionRequiredMsg = "date range overlapse or exist on previous records"
-          this.$notification["error"]({message: "Overtime", description: error.response.data.end_date[0]})
-        }else {
-          this.$notification["error"]({message: "Overtime", description: "something is wrong"})
+          this.$notification["error"]({message: "Offsets", description: error.response.data.offset_date[0]})
+        }else if(error.response.data.error){
+          this.$notification["error"]({message: "Offsets", description: error.response.data.error})
+        }
+        else {
+          this.$notification["error"]({message: "Offsets", description: "something is wrong"})
         }
       }
       this.crudLoading = false

@@ -38,6 +38,16 @@ export default {
       ]
     }
   },
+  created(){
+    const route = useRoute()
+    if(route.query.tab) this.activeTab = route.query.tab
+    this.$router.replace({query: {tab: this.activeTab}})
+  },
+  watch: {
+    activeTab(){
+      this.$router.replace({query: {tab: this.activeTab}})
+    }
+  },
   components: {
     AccountSettingsAccount,
     AccountSettingsSecurity,

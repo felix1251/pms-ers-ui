@@ -113,7 +113,7 @@
                     item-title="name"
                     item-value="id"
                     label="Select Leave type"
-                    :loading="false"
+                    :loading="typeOfLeavesLoading"
                     :readonly="modalType == 'V'"
                     :rules="[v => !!v || 'required']"
                   />
@@ -200,6 +200,7 @@ export default {
       selectionRequiredMsg: "",
       allowHalfDay: false,
       crudLoading: false,
+      typeOfLeavesLoading: false,
     }
   },
   watch: {
@@ -338,14 +339,14 @@ export default {
       }
       this.crudLoading = false
     },
-    getTypeOfLeaves(){
-      if(this.typeOfLeaves.length > 0) return
-      this.$secured.get("api/v2/type_of_leaves")
-        .then(response=>{
-          this.typeOfLeaves = response.data
-        })
-        .catch(error=>{
-        })
+    async getTypeOfLeaves(){
+      this.typeOfLeavesLoading = true
+      try{
+        const res = await this.$secured.get("api/v2/type_of_leaves")
+        this.typeOfLeaves = res.data
+      }catch(error){
+      }
+      this.typeOfLeavesLoading = false
     },
     async getLeaveById(id){
       try{
