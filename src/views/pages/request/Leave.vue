@@ -88,7 +88,7 @@
                 lazy-validation
               >
               <v-row>
-                <v-col cols="12" sm="6" md="12">
+                <v-col cols="12" sm="12" md="12">
                   <a-range-picker
                     v-model:value="date"
                     style="width: 100%"
@@ -105,7 +105,7 @@
                     {{selectionRequiredMsg}}
                   </label>
                 </v-col>
-                <v-col cols="12" sm="6" md="12">
+                <v-col cols="12" sm="12" md="12">
                   <v-select
                     v-model="form.leave_type"
                     :items="typeOfLeaves"
@@ -113,12 +113,12 @@
                     item-title="name"
                     item-value="id"
                     label="Select Leave type"
-                    :loading="false"
+                    :loading="typeOfLeavesLoading"
                     :readonly="modalType == 'V'"
                     :rules="[v => !!v || 'required']"
                   />
                 </v-col>
-                <v-col cols="12" sm="6" md="12">
+                <v-col cols="12" sm="12" md="12">
                   <VCheckbox
                     v-model="form.half_day"
                     label="Half Day"
@@ -126,7 +126,7 @@
                     :disabled="!allowHalfDay || modalType == 'V'"
                   />
                 </v-col>
-                <v-col cols="12" sm="6" md="12">
+                <v-col cols="12" sm="12" md="12">
                   <v-textarea 
                     v-model="form.reason" 
                     color="info" 
@@ -187,7 +187,7 @@ export default {
       perPage: 9,
       len: 1,
       data: [],
-      date: null,
+      date: [],
       loading: true,
       absolute: true,
       modal: false,
@@ -200,6 +200,7 @@ export default {
       selectionRequiredMsg: "",
       allowHalfDay: false,
       crudLoading: false,
+      typeOfLeavesLoading: false,
     }
   },
   watch: {
@@ -268,16 +269,13 @@ export default {
     async edit(){
       this.selectionRequired = false
       this.selectionRequiredMsg = ""
-      this.crudLoading = true
       const { valid } = await this.$refs.form.validate()
       if(!this.date) { 
         this.selectionRequired = true 
         this.selectionRequiredMsg = "required"
       }
-      if (!this.date || !valid) {
-        this.crudLoading = false
-        return
-      }
+      if (!this.date || !valid) return
+      this.crudLoading = true
       let params = {
         start_date: new Date(this.date[0]).toLocaleDateString("sv"),
         end_date: new Date(this.date[1]).toLocaleDateString("sv"),
@@ -293,10 +291,10 @@ export default {
       }catch (error){
         this.crudLoading = false
         if(error.response && error.response.status == 401) return
-        if (error.response.data.end_time) { 
+        if (error.response.data.end_date) { 
           this.selectionRequired = true 
           this.selectionRequiredMsg = "date range overlapse or exist on previous records"
-          this.$notification["error"]({message: "Leave", description: error.response.data.end_time[0]})
+          this.$notification["error"]({message: "Leave", description: error.response.data.end_date[0]})
         }else {
           this.$notification["error"]({message: "Leave", description: "something is wrong"})
         }
@@ -331,24 +329,24 @@ export default {
       }catch (error){
         this.crudLoading = false
         if(error.response && error.response.status == 401) return
-        if (error.response.data.end_time) { 
+        if (error.response.data.end_date) { 
           this.selectionRequired = true 
           this.selectionRequiredMsg = "date range overlapse or exist on previous records"
-          this.$notification["error"]({message: "Leave", description: error.response.data.end_time[0]})
+          this.$notification["error"]({message: "Leave", description: error.response.data.end_date[0]})
         }else {
           this.$notification["error"]({message: "Leave", description: "something is wrong"})
         }
       }
       this.crudLoading = false
     },
-    getTypeOfLeaves(){
-      if(this.typeOfLeaves.length > 0) return
-      this.$secured.get("api/v2/type_of_leaves")
-        .then(response=>{
-          this.typeOfLeaves = response.data
-        })
-        .catch(error=>{
-        })
+    async getTypeOfLeaves(){
+      this.typeOfLeavesLoading = true
+      try{
+        const res = await this.$secured.get("api/v2/type_of_leaves")
+        this.typeOfLeaves = res.data
+      }catch(error){
+      }
+      this.typeOfLeavesLoading = false
     },
     async getLeaveById(id){
       try{
