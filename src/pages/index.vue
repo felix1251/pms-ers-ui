@@ -9,17 +9,22 @@
       <div class="mt-4">
         <leave v-if="activeTab == 'leave'"/>
         <overtime v-if="activeTab == 'overtime'"/>
+        <offset v-if="activeTab == 'offset'"/>
       </div>
     </div>
 </template>
 <script>
 import Leave from '@/views/pages/request/Leave.vue'
 import Overtime from '@/views/pages/request/Overtime.vue'
+import Offset from '@/views/pages/request/Offset.vue'
+import { useRoute } from 'vue-router';
 export default {
   name: "index",
   data(){
     return {
       activeTab: "leave",
+      currRoute: null,
+      init: 0,
       tabs: [
         {
           title: 'Leave',
@@ -44,9 +49,20 @@ export default {
       ]
     }
   },
+  created(){
+    const route = useRoute()
+    if(route.query.tab) this.activeTab = route.query.tab
+    this.$router.replace({query: {tab: this.activeTab}})
+  },
+  watch: {
+    activeTab(){
+      this.$router.replace({query: {tab: this.activeTab}})
+    }
+  },
   components: {
     Leave,
     Overtime,
+    Offset,
   }
 }
 </script>
