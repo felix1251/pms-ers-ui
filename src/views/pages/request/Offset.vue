@@ -2,17 +2,19 @@
   <v-card>
     <template #title>
       <div class="d-flex gap-3 space-between align-center">
-        <span>OVERTIME</span>
+        <span>OFFSET</span>
         <v-icon 
+          id="offset-btn"
           @click.prevent="openModal('A')" 
           class="table-icon" 
           size="28" 
           icon="mdi-plus-circle-outline"
         />
       </div>
+      <small style="font-size: 12px">Hours/Credit remaining: {{credits}} (8 credits per offset)</small>
     </template>
     <v-card-text style="padding: 0px">
-      <div style="position: relative; min-height: 63vh;">
+      <div style="position: relative; min-height: 59vh;">
         <div id="overlay">
           <div style="display: flex; align-items: center; justify-content: center; height: 100%">
             <v-progress-circular
@@ -27,10 +29,9 @@
           <thead>
             <tr>
               <th class="text-left">Date Filed</th>
-              <th class="text-left">Overtime Date/end_time</th>
-              <th class="text-left">Hours</th>
-              <th class="text-left">Billable</th>
-              <th class="text-left">Expected Output</th>
+              <th class="text-left">Offset date</th>
+              <th class="text-left">Hours/Credit Used</th>
+              <th class="text-left">Reason</th>
               <th class="text-left">Status</th>
               <th class="text-left text-center">Actions</th>
             </tr>
@@ -41,17 +42,9 @@
               :key="item.id"
             >
               <td>{{ item.date_filed }}</td>
-              <td>{{ item.datetime }}</td>
-              <td>{{ item.hours }}</td>
-              <td>
-                <v-chip v-if="item.billable" variant="outlined" color="success">
-                  Yes
-                </v-chip>
-                <v-chip v-else variant="outlined" color="error">
-                  No
-                </v-chip>
-              </td>
-              <td>{{ item.output }}</td>
+              <td>{{ item.offset_date }}</td>
+              <td>{{ item.hours_used }}</td>
+              <td>{{ item.reason }}</td>
               <td>
                 <v-chip v-if="item.status == 'P'" variant="outlined" color="primary">
                   Pending
@@ -96,13 +89,15 @@
               >
               <v-row>
                 <v-col cols="12" sm="12" md="12">
-                  <a-range-picker
-                    :show-time="{ format: 'hh:mm A' }"
+                  <small style="font-size: 13px">Hours/Credit remaining: {{credits}} (8 credits per offset)</small>
+                  <a-date-picker 
+                    class="mt-2"
                     v-model:value="date"
+                    format="MMMM DD, YYYY"
                     :disabled="modalType == 'V'"
-                    format="MMM DD, YYYY hh:mm A"
-                    :placeholder="['Start Time', 'End Time']"
+                    :rules="[v => !!v || 'required']"
                     :getPopupContainer="(trigger) => trigger.parentNode"
+                    allowClear
                   />
                   <label 
                     style="margin-left: 15px; color: #FF4C51; font-size: 13px" 
@@ -111,24 +106,14 @@
                     {{selectionRequiredMsg}}
                   </label>
                 </v-col>
-                <v-col cols="12" sm="6" md="12">
-                  <v-switch 
-                    v-model="form.billable"  
-                    label="Billable"
-                    style="width: 100px"
-                    inset
-                    color="info"
-                  />
-                  <span>For offset reason, set to non-billable.</span>
-                </v-col>
                 <v-col cols="12" sm="12" md="12">
                   <v-textarea 
-                    v-model="form.output" 
+                    v-model="form.reason" 
                     color="info" 
                     variant="outlined" 
                     auto-grow 
-                    label="Expected Output" 
-                    rows="7" 
+                    label="Reason" 
+                    rows="8" 
                     row-height="20"
                     :readonly="modalType == 'V'"
                     :rules="[v => !!v || 'required']"
@@ -172,10 +157,10 @@
 
 <script>
 import dayjs from "dayjs"
-const formDefault = { output: null, billable: true}
+const formDefault = { offset_date: null, reason: null }
 import { Modal } from 'ant-design-vue';
 export default {
-  name: "overtime",
+  name: "offset",
   data(){
     return {
       page: 1,
@@ -195,27 +180,33 @@ export default {
       selectionRequiredMsg: "",
       allowHalfDay: false,
       crudLoading: false,
+      credits: 0,
     }
   },
   watch: {
     page(value){
       this.page = value
-      this.getOvertimes()
+      this.getOffsets()
     }
   },
   mounted() {
-    this.getOvertimes()
+    this.getOffsets()
+    this.getRemainingCredits()
   },
   methods: {
     openModal(type, id){
+      if(this.credits == 0){
+        this.$notification["warning"]({message: "Offset Credit", description: "Insufficient Credit, add non-billable overtime first"})
+        return
+      }
       this.modalType = type
       this.modal = true
       if(type == 'V' || type == 'E'){
-        if(type == 'V') this.modalTitle = "VIEW OVERTIME"
-        if(type == 'E') this.modalTitle = "EDIT OVERTIME"
-        this.getOvetimeById(id)
+        if(type == 'V') this.modalTitle = "VIEW OFFSET"
+        if(type == 'E') this.modalTitle = "EDIT OFFSER"
+        this.getOffsetById(id)
       }else{
-        this.modalTitle = "CREATE OVERTIME"
+        this.modalTitle = "CREATE OFFSET"
       }
     },
     closeModal(){
@@ -238,7 +229,7 @@ export default {
               .then(()=>{
                 this.$notification["success"]({message: "Overtime", description: "Overtime successfully voided"});
                 resolve()
-                this.getOvertimes()
+                this.getOffsets()
               })
               .catch(error => {
                 reject()
@@ -270,7 +261,7 @@ export default {
         const res = await this.$secured.put("api/v2/overtimes/"+this.form.id, {overtime: params})
         this.$notification["success"]({message: "Overtime", description: "Overtime successfully created"});
         this.closeModal()
-        this.getOvertimes()
+        this.getOffsets()
       }catch (error){
         this.crudLoading = false
         if(error.response && error.response.status == 401) return
@@ -298,16 +289,14 @@ export default {
         return
       }
       let params = {
-        start_date: new Date(this.date[0]),
-        end_date: new Date(this.date[1]),
-        output: this.form.output,
-        billable: this.form.billable
+        offset_date: new Date(this.date[0]),
+        reason: this.form.reason,
       }
       try{
         const res = await this.$secured.post("api/v2/overtimes", {overtime: params})
         this.$notification["success"]({message: "Overtime", description: "Overtime successfully created"});
         this.closeModal()
-        this.getOvertimes()
+        this.getOffsets()
       }catch (error){
         this.crudLoading = false
         if(error.response && error.response.status == 401) return
@@ -321,21 +310,30 @@ export default {
       }
       this.crudLoading = false
     },
-    async getOvetimeById(id){
+    async getRemainingCredits(){
+      document.getElementById("offset-btn").style.display = "none" 
       try{
-        const res = await this.$secured.get("api/v2/overtimes/"+id)
+        const res = await this.$secured.get("api/v2/emp_overtime")
+        this.credits = res.data
+      }catch(error){
+        console.log(error.response)
+      }
+      document.getElementById("offset-btn").style.display = "block" 
+    },
+    async getOffsetById(id){
+      try{
+        const res = await this.$secured.get("api/v2/offsets/"+id)
         this.form.id = res.data.id
-        this.form.billable = res.data.billable
-        this.form.output = res.data.output
-        this.date = [dayjs(res.data.start_date), dayjs(res.data.end_date)]
+        this.date = dayjs(res.data.offset_date)
+        this.form.reason = res.data.reason
       }catch(error){
         console.log(error.response)
       }
     },
-    async getOvertimes(){
+    async getOffsets(){
       document.getElementById("overlay").style.display = "block" 
       try{
-        const res = await this.$secured.get("api/v2/overtimes?page="+this.page+"&per_page="+this.perPage)
+        const res = await this.$secured.get("api/v2/offsets?page="+this.page+"&per_page="+this.perPage)
         this.data = res.data.data
         this.generateLength(res.data.total_count)
       }catch(error){
