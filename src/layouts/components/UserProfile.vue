@@ -32,7 +32,14 @@
           </VListItemSubtitle>
         </VListItem>
         <VDivider class="my-2" />
-        <VListItem @click.prevent="logout">
+        <VListItem style="display: flex; flex-direction: row" @click.prevent="logout">
+          <template #prepend>
+              <VIcon
+                class="me-2"
+                icon="mdi-logout-variant"
+                size="22"
+              />
+          </template>
           <VListItemTitle>Logout</VListItemTitle>
         </VListItem>
       </VList>
@@ -42,6 +49,7 @@
 
 <script>
 import { mapState } from "vuex";
+import secureStorage from '@/secureStorage'
 export default {
   name: "user-profile",
   data(){
@@ -60,6 +68,7 @@ export default {
     logout(){
       this.$secured.delete("api/v2/signin")
         .then((response) => {
+          secureStorage.setItem("userCredential", null)
           this.$store.commit("unsetCurrentUser");
           this.$router.replace("/login");
         })
