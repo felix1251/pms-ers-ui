@@ -69,7 +69,7 @@
               <td class="text-center">
                 <VIcon class="table-icon" @click.prevent="openModal('V', item.id)"  size="20" start icon="mdi-eye"/>
                 <VIcon class="table-icon" @click.prevent="openModal('E', item.id)" v-if="item.status == 'P'" size="20" start icon="mdi-edit"/>
-                <VIcon class="table-icon" @click.prevent="voidLeave(item.id)" v-if="item.status == 'P'" size="20" start icon="mdi-close-box"/>
+                <VIcon class="table-icon" @click.prevent="voidOvertime(item.id)" v-if="item.status == 'P'" size="20" start icon="mdi-close-box"/>
               </td>
             </tr>
           </tbody>
@@ -95,14 +95,13 @@
                 lazy-validation
               >
               <v-row>
-                <v-col cols="12" sm="6" md="12">
+                <v-col cols="12" sm="12" md="12">
                   <a-range-picker
+                    :show-time="{ format: 'hh:mm A' }"
                     v-model:value="date"
-                    style="width: 100%"
-                    size="large"
-                    format="MMM DD, YYYY"
-                    :rules="[v => !!v || 'required']"
                     :disabled="modalType == 'V'"
+                    format="MMM DD, YYYY hh:mm A"
+                    :placeholder="['Start Time', 'End Time']"
                     :getPopupContainer="(trigger) => trigger.parentNode"
                   />
                   <label 
@@ -112,35 +111,22 @@
                     {{selectionRequiredMsg}}
                   </label>
                 </v-col>
-                <v-col cols="12" sm="6" md="12">
-                  <v-select
-                    v-model="form.leave_type"
-                    :items="typeOfLeaves"
+                <v-col cols="12" sm="6" md="2">
+                  <v-switch 
+                    v-model="form.billable"  
+                    label="Billable" 
+                    inset
                     color="info"
-                    item-title="name"
-                    item-value="id"
-                    label="Select Leave type"
-                    :loading="false"
-                    :readonly="modalType == 'V'"
-                    :rules="[v => !!v || 'required']"
                   />
                 </v-col>
-                <v-col cols="12" sm="6" md="12">
-                  <VCheckbox
-                    v-model="form.half_day"
-                    label="Half Day"
-                    color="info"
-                    :disabled="!allowHalfDay || modalType == 'V'"
-                  />
-                </v-col>
-                <v-col cols="12" sm="6" md="12">
+                <v-col cols="12" sm="12" md="12">
                   <v-textarea 
-                    v-model="form.reason" 
+                    v-model="form.output" 
                     color="info" 
                     variant="outlined" 
                     auto-grow 
-                    label="Reason" 
-                    rows="4" 
+                    label="Expected Output" 
+                    rows="7" 
                     row-height="20"
                     :readonly="modalType == 'V'"
                     :rules="[v => !!v || 'required']"
@@ -184,7 +170,7 @@
 
 <script>
 import dayjs from "dayjs"
-const formDefault = { leave_type: null, reason: null, half_day: false}
+const formDefault = { output: null, billable: true}
 import { Modal } from 'ant-design-vue';
 export default {
   name: "overtime",
@@ -210,15 +196,6 @@ export default {
     }
   },
   watch: {
-    date(value){
-      this.allowHalfDay = false
-      this.form.half_day = false
-      if(value){
-        if(new Date(value[0]).toLocaleDateString("sv") ==  new Date(value[1]).toLocaleDateString("sv")){
-          this.allowHalfDay = true
-        }
-      }
-    },
     page(value){
       this.page = value
       this.getOvertimes()
@@ -231,11 +208,10 @@ export default {
     openModal(type, id){
       this.modalType = type
       this.modal = true
-      this.getTypeOfLeaves()
       if(type == 'V' || type == 'E'){
         if(type == 'V') this.modalTitle = "VIEW OVERTIME"
         if(type == 'E') this.modalTitle = "EDIT OVERTIME"
-        this.getLeaveById(id)
+        this.getOvetimeById(id)
       }else{
         this.modalTitle = "CREATE OVERTIME"
       }
@@ -247,25 +223,25 @@ export default {
       this.selectionRequired = false
       this.selectionRequiredMsg = ""
     },
-    voidLeave(id){
+    voidOvertime(id){
       Modal.confirm({
-        title: 'Void Leave',
+        title: 'Void Overtime',
         zIndex: 999999999,
-        content: "Are you sure you want to permanently void this leave?",
+        content: "Are you sure you want to permanently void this void?",
         okText: "Void",
         // eslint-disable-next-line @typescript-eslint/no-empty-function
         onOk: () => {
           return new Promise((resolve, reject) => {
-            this.$secured.delete("api/v2/leaves/"+id)
+            this.$secured.delete("api/v2/overtimes/"+id)
               .then(()=>{
-                this.$notification["success"]({message: "Leave", description: "Leave successfully voided"});
+                this.$notification["success"]({message: "Overtime", description: "Overtime successfully voided"});
                 resolve()
                 this.getOvertimes()
               })
               .catch(error => {
                 reject()
                 if(error.response && error.response.status == 401) return
-                this.$notification["error"]({message: "Leave", description: "Something is wrong"})
+                this.$notification["error"]({message: "Overtime", description: "Something is wrong"})
               })
           }).catch(() => console.log('Oops errors!'));
         },
@@ -275,37 +251,33 @@ export default {
     async edit(){
       this.selectionRequired = false
       this.selectionRequiredMsg = ""
-      this.crudLoading = true
       const { valid } = await this.$refs.form.validate()
       if(!this.date) { 
         this.selectionRequired = true 
         this.selectionRequiredMsg = "required"
       }
-      if (!this.date || !valid) {
-        this.crudLoading = false
-        return
-      }
+      if (!this.date || !valid) return
+      this.crudLoading = true
       let params = {
-        start_date: new Date(this.date[0]).toLocaleDateString("sv"),
-        end_date: new Date(this.date[1]).toLocaleDateString("sv"),
-        leave_type: this.form.leave_type,
-        reason: this.form.reason,
-        half_day: this.form.half_day
+        start_date: new Date(this.date[0]),
+        end_date: new Date(this.date[1]),
+        output: this.form.output,
+        billable: this.form.billable
       }
       try{
-        const res = await this.$secured.put("api/v2/leaves/"+this.form.id, {leave: params})
-        this.$notification["success"]({message: "Leave", description: "Leave successfully created"});
+        const res = await this.$secured.put("api/v2/overtimes/"+this.form.id, {overtime: params})
+        this.$notification["success"]({message: "Overtime", description: "Overtime successfully created"});
         this.closeModal()
         this.getOvertimes()
       }catch (error){
         this.crudLoading = false
         if(error.response && error.response.status == 401) return
-        if (error.response.data.end_time) { 
+        if (error.response.data.end_date) { 
           this.selectionRequired = true 
           this.selectionRequiredMsg = "date range overlapse or exist on previous records"
-          this.$notification["error"]({message: "Leave", description: error.response.data.end_time[0]})
+          this.$notification["error"]({message: "Overtime", description: error.response.data.end_date[0]})
         }else {
-          this.$notification["error"]({message: "Leave", description: "something is wrong"})
+          this.$notification["error"]({message: "Overtime", description: "something is wrong"})
         }
       }
       this.crudLoading = false
@@ -324,46 +296,35 @@ export default {
         return
       }
       let params = {
-        start_date: new Date(this.date[0]).toLocaleDateString("sv"),
-        end_date: new Date(this.date[1]).toLocaleDateString("sv"),
-        leave_type: this.form.leave_type,
-        reason: this.form.reason,
-        half_day: this.form.half_day
+        start_date: new Date(this.date[0]),
+        end_date: new Date(this.date[1]),
+        output: this.form.output,
+        billable: this.form.billable
       }
       try{
-        const res = await this.$secured.post("api/v2/leaves", {leave: params})
-        this.$notification["success"]({message: "Leave", description: "Leave successfully created"});
+        const res = await this.$secured.post("api/v2/overtimes", {overtime: params})
+        this.$notification["success"]({message: "Overtime", description: "Overtime successfully created"});
         this.closeModal()
         this.getOvertimes()
       }catch (error){
         this.crudLoading = false
         if(error.response && error.response.status == 401) return
-        if (error.response.data.end_time) { 
-          this.selectionRequired = true 
+        if (error.response.data.end_date) { 
+          this.selectionRequired = true
           this.selectionRequiredMsg = "date range overlapse or exist on previous records"
-          this.$notification["error"]({message: "Leave", description: error.response.data.end_time[0]})
+          this.$notification["error"]({message: "Overtime", description: error.response.data.end_date[0]})
         }else {
-          this.$notification["error"]({message: "Leave", description: "something is wrong"})
+          this.$notification["error"]({message: "Overtime", description: "something is wrong"})
         }
       }
       this.crudLoading = false
     },
-    getTypeOfLeaves(){
-      if(this.typeOfLeaves.length > 0) return
-      this.$secured.get("api/v2/type_of_leaves")
-        .then(response=>{
-          this.typeOfLeaves = response.data
-        })
-        .catch(error=>{
-        })
-    },
-    async getLeaveById(id){
+    async getOvetimeById(id){
       try{
-        const res = await this.$secured.get("api/v2/leaves/"+id)
+        const res = await this.$secured.get("api/v2/overtimes/"+id)
         this.form.id = res.data.id
-        this.form.leave_type = Number(res.data.leave_type)
-        this.form.half_day = res.data.half_day
-        this.form.reason = res.data.reason
+        this.form.billable = res.data.billable
+        this.form.output = res.data.output
         this.date = [dayjs(res.data.start_date), dayjs(res.data.end_date)]
       }catch(error){
         console.log(error.response)
@@ -415,6 +376,7 @@ export default {
   .ant-picker{
     border-radius: 8px;
     padding: 12px 16px;
+    width: 100%;
   }
   #overlay {
     position: absolute; /* Sit on top of the page content */
