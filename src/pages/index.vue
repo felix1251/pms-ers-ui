@@ -10,6 +10,7 @@
         <leave v-if="activeTab == 'leave'"/>
         <overtime v-if="activeTab == 'overtime'"/>
         <offset v-if="activeTab == 'offset'"/>
+        <official-business v-if="activeTab == 'official_business'"/>
       </div>
     </div>
 </template>
@@ -17,7 +18,9 @@
 import Leave from '@/views/pages/request/Leave.vue'
 import Overtime from '@/views/pages/request/Overtime.vue'
 import Offset from '@/views/pages/request/Offset.vue'
+import OfficialBusiness from '@/views/pages/request/OfficialBusiness.vue'
 import { useRoute } from 'vue-router';
+
 export default {
   name: "index",
   data(){
@@ -44,7 +47,7 @@ export default {
         },
         {
           title: 'Official Business',
-          tab: 'official-business',
+          tab: 'official_business',
         },
       ]
     }
@@ -63,6 +66,7 @@ export default {
     Leave,
     Overtime,
     Offset,
+    OfficialBusiness,
   }
 }
 </script>
