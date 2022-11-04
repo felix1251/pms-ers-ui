@@ -5,7 +5,7 @@
         <VCardText class="d-flex">
           <a-avatar
             :size="90"
-            class="d-flex align-items-center justify-content-center"
+            class="d-flex align-center justify-center"
             style="border-radius: 8px"
           >
             <template #icon>

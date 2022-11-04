@@ -13,7 +13,7 @@
       </div>
       <small style="font-size: 12px">Hours/Credit remaining: {{credits}} (8 credits per offset)</small>
     </template>
-    <v-card-text style="padding: 0px">
+    <v-card-text style="padding: 0px; margin-top: -15px">
       <div style="position: relative; min-height: 59vh;">
         <div id="overlay">
           <div style="display: flex; align-items: center; justify-content: center; height: 100%">
@@ -95,6 +95,7 @@
                     v-model:value="date"
                     format="MMMM DD, YYYY"
                     :disabled="modalType == 'V'"
+                    placeholder="Select offset date*"
                     :getPopupContainer="(trigger) => trigger.parentNode"
                     allowClear
                   />
@@ -111,7 +112,7 @@
                     color="info" 
                     variant="outlined" 
                     auto-grow 
-                    label="Reason" 
+                    label="Reason*" 
                     rows="8" 
                     row-height="20"
                     :readonly="modalType == 'V'"
@@ -304,8 +305,10 @@ export default {
           this.selectionRequired = true
           this.selectionRequiredMsg = "date range overlapse or exist on previous records"
           this.$notification["error"]({message: "Offsets", description: error.response.data.offset_date[0]})
-        }else if(error.response.data.error){
-          this.$notification["error"]({message: "Offsets", description: error.response.data.error})
+        }else if(error.response.data.credits){
+          this.selectionRequired = true
+          this.selectionRequiredMsg = error.response.data.credits[0]
+          this.$notification["error"]({message: "Offsets", description: error.response.data.credits[0]})
         }
         else {
           this.$notification["error"]({message: "Offsets", description: "something is wrong"})
