@@ -101,7 +101,7 @@
                     v-model:value="date"
                     :disabled="modalType == 'V'"
                     format="MMM DD, YYYY hh:mm A"
-                    :placeholder="['Start Time', 'End Time']"
+                    :placeholder="['Start Time*', 'End Time*']"
                     :getPopupContainer="(trigger) => trigger.parentNode"
                   />
                   <label 
@@ -127,7 +127,7 @@
                     color="info" 
                     variant="outlined" 
                     auto-grow 
-                    label="Expected Output" 
+                    label="Expected Output*" 
                     rows="7" 
                     row-height="20"
                     :readonly="modalType == 'V'"
@@ -374,7 +374,6 @@ export default {
     overflow: hidden;
     text-overflow: ellipsis;
   }
-
   .ant-picker{
     border-radius: 8px;
     padding: 12px 16px;
