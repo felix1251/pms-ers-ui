@@ -10,6 +10,11 @@
           icon="mdi-plus-circle-outline"
         />
       </div>
+      <div v-if="leavesCredits" class="d-flex flex-column mt-2">
+        <small class="leaves-credits">Sick Leave With Pay Credits: {{leavesCredits.employee_current_sick_leave_credits}} / {{leavesCredits.max_sick_leave_credits}}</small>
+        <small class="leaves-credits">Vacation Leave With Pay Credits: {{leavesCredits.employee_current_vacation_leave_credits}} / {{leavesCredits.max_vacation_leave_credits}}</small>
+        <small class="leaves-credits">Others: {{leavesCredits.others}}</small>
+      </div>
     </template>
     <v-card-text style="padding: 0px">
       <div style="position: relative; min-height: 63vh;">
@@ -201,6 +206,7 @@ export default {
       allowHalfDay: false,
       crudLoading: false,
       typeOfLeavesLoading: false,
+      leavesCredits: null,
     }
   },
   watch: {
@@ -220,8 +226,17 @@ export default {
   },
   mounted() {
     this.getLeaves()
+    this.getLeaveCreditsTotal()
   },
   methods: {
+    async getLeaveCreditsTotal(){
+      try{
+        const res = await this.$secured.get("api/v2/leave_credits_total")
+        this.leavesCredits = res.data
+      }catch(error){
+        console.log(error.response)
+      }
+    },
     openModal(type, id){
       this.modalType = type
       this.modal = true
@@ -255,6 +270,7 @@ export default {
                 this.$notification["success"]({message: "Leave", description: "Leave successfully voided"});
                 resolve()
                 this.getLeaves()
+                this.getLeaveCreditsTotal()
               })
               .catch(error => {
                 reject()
@@ -286,6 +302,8 @@ export default {
       try{
         const res = await this.$secured.put("api/v2/leaves/"+this.form.id, {leave: params})
         this.$notification["success"]({message: "Leave", description: "Leave successfully created"});
+        const le = this.typeOfLeaves.find(id => params.leave_type)
+        if(le.code == "SLWP" || le.code == "VLWP") this.getLeaveCreditsTotal()
         this.closeModal()
         this.getLeaves()
       }catch (error){
@@ -295,6 +313,10 @@ export default {
           this.selectionRequired = true 
           this.selectionRequiredMsg = "date range overlapse or exist on previous records"
           this.$notification["error"]({message: "Leave", description: error.response.data.end_date[0]})
+        }else if(error.response.data.credits){
+          this.selectionRequired = true 
+          this.selectionRequiredMsg = "Credits exceeds"
+          this.$notification["error"]({message: "Leave", description: error.response.data.credits[0]})
         }else {
           this.$notification["error"]({message: "Leave", description: "something is wrong"})
         }
@@ -324,6 +346,8 @@ export default {
       try{
         const res = await this.$secured.post("api/v2/leaves", {leave: params})
         this.$notification["success"]({message: "Leave", description: "Leave successfully created"});
+        const le = this.typeOfLeaves.find(item => item.id == params.leave_type)
+        if(le.code == "SLWP" || le.code == "VLWP") this.getLeaveCreditsTotal()
         this.closeModal()
         this.getLeaves()
       }catch (error){
@@ -333,6 +357,10 @@ export default {
           this.selectionRequired = true 
           this.selectionRequiredMsg = "date range overlapse or exist on previous records"
           this.$notification["error"]({message: "Leave", description: error.response.data.end_date[0]})
+        }else if(error.response.data.credits){
+          this.selectionRequired = true 
+          this.selectionRequiredMsg = "Credits exceeds"
+          this.$notification["error"]({message: "Leave", description: error.response.data.credits[0]})
         }else {
           this.$notification["error"]({message: "Leave", description: "something is wrong"})
         }
@@ -402,7 +430,9 @@ export default {
     overflow: hidden;
     text-overflow: ellipsis;
   }
-
+  .leaves-credits{
+    font-size: 13px;
+  }
   .ant-picker{
     border-radius: 8px;
     padding: 12px 16px;
