@@ -2,7 +2,7 @@
   <v-card>
     <template #title>
       <div class="d-flex gap-3 space-between align-center">
-        <span>LEAVE</span>
+        <span>OFFICIAL BUSINESS</span>
         <v-icon 
           @click.prevent="openModal('A')" 
           class="table-icon" 
@@ -10,13 +10,8 @@
           icon="mdi-plus-circle-outline"
         />
       </div>
-      <div v-if="leavesCredits" class="d-flex flex-column mt-2">
-        <small class="leaves-credits">Sick Leave With Pay Credits: {{leavesCredits.employee_current_sick_leave_credits}} / {{leavesCredits.max_sick_leave_credits}}</small>
-        <small class="leaves-credits">Vacation Leave With Pay Credits: {{leavesCredits.employee_current_vacation_leave_credits}} / {{leavesCredits.max_vacation_leave_credits}}</small>
-        <small class="leaves-credits">Others: {{leavesCredits.others}}</small>
-      </div>
     </template>
-    <v-card-text style="padding: 0px; margin-top: -15px">
+    <v-card-text style="padding: 0px;">
       <div style="position: relative; min-height: 63vh;">
         <div id="overlay">
           <div style="display: flex; align-items: center; justify-content: center; height: 100%">
@@ -32,9 +27,9 @@
           <thead>
             <tr>
               <th class="text-left">Date Filed</th>
-              <th class="text-left">Inclusive Dates</th>
+              <th class="text-left">Date</th>
               <th class="text-left">Days</th>
-              <th class="text-left">Type</th>
+              <th class="text-left">Client</th>
               <th class="text-left">Reason</th>
               <th class="text-left">Status</th>
               <th class="text-left text-center">Actions</th>
@@ -46,9 +41,9 @@
               :key="item.id"
             >
               <td>{{ item.date_filed }}</td>
-              <td>{{ item.inclusive_date }}</td>
+              <td>{{ item.date }}</td>
               <td>{{ item.days }}</td>
-              <td>{{ item.type }}</td>
+              <td>{{ item.client }}</td>
               <td>{{ item.reason }}</td>
               <td>
                 <v-chip v-if="item.status == 'P'" variant="outlined" color="primary">
@@ -67,7 +62,7 @@
               <td class="text-center">
                 <VIcon class="table-icon" @click.prevent="openModal('V', item.id)"  size="20" start icon="mdi-eye"/>
                 <VIcon class="table-icon" @click.prevent="openModal('E', item.id)" v-if="item.status == 'P'" size="20" start icon="mdi-edit"/>
-                <VIcon class="table-icon" @click.prevent="voidLeave(item.id)" v-if="item.status == 'P'" size="20" start icon="mdi-close-box"/>
+                <VIcon class="table-icon" @click.prevent="voideOfficialBusiness(item.id)" v-if="item.status == 'P'" size="20" start icon="mdi-close-box"/>
               </td>
             </tr>
           </tbody>
@@ -101,7 +96,7 @@
                     format="MMM DD, YYYY"
                     :rules="[v => !!v || 'required']"
                     :disabled="modalType == 'V'"
-                    :placeholder="['Start date*', 'Start date*']"
+                    :placeholder="['Start date*', 'End date*']"
                     :getPopupContainer="(trigger) => trigger.parentNode"
                   />
                   <label 
@@ -112,24 +107,12 @@
                   </label>
                 </v-col>
                 <v-col cols="12" sm="12" md="12">
-                  <v-select
-                    v-model="form.leave_type"
-                    :items="typeOfLeaves"
+                  <VTextField
+                    v-model="form.client" 
+                    label="Client*" 
                     color="info"
-                    item-title="name"
-                    item-value="id"
-                    label="Select leave type*"
-                    :loading="typeOfLeavesLoading"
                     :readonly="modalType == 'V'"
                     :rules="[v => !!v || 'required']"
-                  />
-                </v-col>
-                <v-col cols="12" sm="12" md="12">
-                  <VCheckbox
-                    v-model="form.half_day"
-                    label="Half Day"
-                    color="info"
-                    :disabled="!allowHalfDay || modalType == 'V'"
                   />
                 </v-col>
                 <v-col cols="12" sm="12" md="12">
@@ -139,7 +122,7 @@
                     variant="outlined" 
                     auto-grow 
                     label="Reason*" 
-                    rows="4" 
+                    rows="5" 
                     row-height="20"
                     :readonly="modalType == 'V'"
                     :rules="[v => !!v || 'required']"
@@ -183,10 +166,11 @@
 
 <script>
 import dayjs from "dayjs"
-const formDefault = { leave_type: null, reason: null, half_day: false}
+const formDefault = { client: null, reason: null}
 import { Modal } from 'ant-design-vue';
+
 export default {
-  name: "leave",
+  name: "undertime",
   data(){
     return {
       page: 1,
@@ -206,48 +190,27 @@ export default {
       selectionRequiredMsg: "",
       allowHalfDay: false,
       crudLoading: false,
-      typeOfLeavesLoading: false,
-      leavesCredits: null,
     }
   },
   watch: {
-    date(value){
-      this.allowHalfDay = false
-      this.form.half_day = false
-      if(value){
-        if(new Date(value[0]).toLocaleDateString("sv") ==  new Date(value[1]).toLocaleDateString("sv")){
-          this.allowHalfDay = true
-        }
-      }
-    },
     page(value){
       this.page = value
-      this.getLeaves()
+      this.getOfficialBusiness()
     }
   },
   mounted() {
-    this.getLeaves()
-    this.getLeaveCreditsTotal()
+    this.getOfficialBusiness()
   },
   methods: {
-    async getLeaveCreditsTotal(){
-      try{
-        const res = await this.$secured.get("api/v2/leave_credits_total")
-        this.leavesCredits = res.data
-      }catch(error){
-        console.log(error.response)
-      }
-    },
     openModal(type, id){
       this.modalType = type
       this.modal = true
-      this.getTypeOfLeaves()
       if(type == 'V' || type == 'E'){
-        if(type == 'V') this.modalTitle = "VIEW LEAVE"
-        if(type == 'E') this.modalTitle = "EDIT LEAVE"
-        this.getLeaveById(id)
+        if(type == 'V') this.modalTitle = "VIEW UNDERTIME"
+        if(type == 'E') this.modalTitle = "EDIT UNDERTIME"
+        this.getOfficialBusinessByID(id)
       }else{
-        this.modalTitle = "CREATE LEAVE"
+        this.modalTitle = "CREATE UNDERTIME"
       }
     },
     closeModal(){
@@ -257,26 +220,25 @@ export default {
       this.selectionRequired = false
       this.selectionRequiredMsg = ""
     },
-    voidLeave(id){
+    voideOfficialBusiness(id){
       Modal.confirm({
         title: 'Void Leave',
         zIndex: 999999999,
-        content: "Are you sure you want to permanently void this leave?",
+        content: "Are you sure you want to permanently void this official business?",
         okText: "Void",
         // eslint-disable-next-line @typescript-eslint/no-empty-function
         onOk: () => {
           return new Promise((resolve, reject) => {
-            this.$secured.delete("api/v2/leaves/"+id)
+            this.$secured.delete("api/v2/official_businesses/"+id)
               .then(()=>{
-                this.$notification["success"]({message: "Leave", description: "Leave successfully voided"});
                 resolve()
-                this.getLeaves()
-                this.getLeaveCreditsTotal()
+                this.$notification["success"]({message: "Official Business", description: "Official business successfully voided"});
+                this.getOfficialBusiness()
               })
               .catch(error => {
                 reject()
                 if(error.response && error.response.status == 401) return
-                this.$notification["error"]({message: "Leave", description: "Something is wrong"})
+                this.$notification["error"]({message: "Official Business", description: "Something is wrong"})
               })
           }).catch(() => console.log('Oops errors!'));
         },
@@ -296,30 +258,29 @@ export default {
       let params = {
         start_date: new Date(this.date[0]).toLocaleDateString("sv"),
         end_date: new Date(this.date[1]).toLocaleDateString("sv"),
-        leave_type: this.form.leave_type,
         reason: this.form.reason,
-        half_day: this.form.half_day
+        client: this.form.client,
       }
       try{
-        const res = await this.$secured.put("api/v2/leaves/"+this.form.id, {leave: params})
-        this.$notification["success"]({message: "Leave", description: "Leave successfully created"});
-        const le = this.typeOfLeaves.find(id => params.leave_type)
-        if(le.code == "SLWP" || le.code == "VLWP") this.getLeaveCreditsTotal()
+        const res = await this.$secured.put("api/v2/official_businesses/"+this.form.id, {official_business: params})
+        this.$notification["success"]({message: "Official Business", description: "Official business successfully created"});
         this.closeModal()
-        this.getLeaves()
+        this.getOfficialBusiness()
       }catch (error){
-        this.crudLoading = false
-        if(error.response && error.response.status == 401) return
+        if(error.response && error.response.status == 401) {
+          this.crudLoading = false
+          return
+        }
         if (error.response.data.end_date) { 
           this.selectionRequired = true 
           this.selectionRequiredMsg = "date range overlapse or exist on previous records"
-          this.$notification["error"]({message: "Leave", description: error.response.data.end_date[0]})
+          this.$notification["error"]({message: "Official Business", description: error.response.data.end_date[0]})
         }else if(error.response.data.credits){
           this.selectionRequired = true 
           this.selectionRequiredMsg = "Credits exceeds"
-          this.$notification["error"]({message: "Leave", description: error.response.data.credits[0]})
+          this.$notification["error"]({message: "Official Business", description: error.response.data.credits[0]})
         }else {
-          this.$notification["error"]({message: "Leave", description: "something is wrong"})
+          this.$notification["error"]({message: "Official Business", description: "something is wrong"})
         }
       }
       this.crudLoading = false
@@ -340,59 +301,46 @@ export default {
       let params = {
         start_date: new Date(this.date[0]).toLocaleDateString("sv"),
         end_date: new Date(this.date[1]).toLocaleDateString("sv"),
-        leave_type: this.form.leave_type,
         reason: this.form.reason,
-        half_day: this.form.half_day
+        client: this.form.client,
       }
       try{
-        const res = await this.$secured.post("api/v2/leaves", {leave: params})
-        this.$notification["success"]({message: "Leave", description: "Leave successfully created"});
-        const le = this.typeOfLeaves.find(item => item.id == params.leave_type)
-        if(le.code == "SLWP" || le.code == "VLWP") this.getLeaveCreditsTotal()
+        const res = await this.$secured.post("api/v2/official_businesses", {official_business: params})
+        this.$notification["success"]({message: "Official Business", description: "Official business successfully created"});
         this.closeModal()
-        this.getLeaves()
+        this.getOfficialBusiness()
       }catch (error){
         this.crudLoading = false
         if(error.response && error.response.status == 401) return
         if (error.response.data.end_date) { 
           this.selectionRequired = true 
           this.selectionRequiredMsg = "date range overlapse or exist on previous records"
-          this.$notification["error"]({message: "Leave", description: error.response.data.end_date[0]})
+          this.$notification["error"]({message: "Official Business", description: error.response.data.end_date[0]})
         }else if(error.response.data.credits){
           this.selectionRequired = true 
           this.selectionRequiredMsg = "Credits exceeds"
-          this.$notification["error"]({message: "Leave", description: error.response.data.credits[0]})
+          this.$notification["error"]({message: "Official Business", description: error.response.data.credits[0]})
         }else {
-          this.$notification["error"]({message: "Leave", description: "something is wrong"})
+          this.$notification["error"]({message: "Official Business", description: "something is wrong"})
         }
       }
       this.crudLoading = false
     },
-    async getTypeOfLeaves(){
-      this.typeOfLeavesLoading = true
+    async getOfficialBusinessByID(id){
       try{
-        const res = await this.$secured.get("api/v2/type_of_leaves")
-        this.typeOfLeaves = res.data
-      }catch(error){
-      }
-      this.typeOfLeavesLoading = false
-    },
-    async getLeaveById(id){
-      try{
-        const res = await this.$secured.get("api/v2/leaves/"+id)
+        const res = await this.$secured.get("api/v2/official_businesses/"+id)
         this.form.id = res.data.id
-        this.form.leave_type = Number(res.data.leave_type)
-        this.form.half_day = res.data.half_day
+        this.form.client = res.data.client
         this.form.reason = res.data.reason
         this.date = [dayjs(res.data.start_date), dayjs(res.data.end_date)]
       }catch(error){
         console.log(error.response)
       }
     },
-    async getLeaves(){
+    async getOfficialBusiness(){
       document.getElementById("overlay").style.display = "block" 
       try{
-        const res = await this.$secured.get("api/v2/leaves?page="+this.page+"&per_page="+this.perPage)
+        const res = await this.$secured.get("api/v2/official_businesses?page="+this.page+"&per_page="+this.perPage)
         this.data = res.data.data
         this.generateLength(res.data.total_count)
       }catch(error){
@@ -437,9 +385,6 @@ export default {
   .ant-picker{
     border-radius: 8px;
     padding: 12px 16px;
-  }
-  .title{
-    padding: 15px; 
   }
   #overlay {
     position: absolute; /* Sit on top of the page content */
