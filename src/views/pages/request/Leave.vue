@@ -10,75 +10,65 @@
           icon="mdi-plus-circle-outline"
         />
       </div>
-      <div v-if="leavesCredits" class="d-flex flex-column mt-2">
-        <small class="leaves-credits">Sick Leave With Pay Credits: {{leavesCredits.employee_current_sick_leave_credits}} / {{leavesCredits.max_sick_leave_credits}}</small>
-        <small class="leaves-credits">Vacation Leave With Pay Credits: {{leavesCredits.employee_current_vacation_leave_credits}} / {{leavesCredits.max_vacation_leave_credits}}</small>
+      <div class="d-flex flex-column mt-2">
+        <small class="leaves-credits">Sick Leave With Pay Credits: {{leavesCredits.employee_current_sick_leave_credits || 0.0}} / {{leavesCredits.max_sick_leave_credits || 0.0}}</small>
+        <small class="leaves-credits">Vacation Leave With Pay Credits: {{leavesCredits.employee_current_vacation_leave_credits || 0.0}} / {{leavesCredits.max_vacation_leave_credits || 0.0}}</small>
         <small class="leaves-credits">Others: {{leavesCredits.others}}</small>
       </div>
     </template>
-    <v-card-text style="padding: 0px; margin-top: -15px">
-      <div style="position: relative; min-height: 63vh;">
-        <div id="overlay">
-          <div style="display: flex; align-items: center; justify-content: center; height: 100%">
-            <v-progress-circular
-              indeterminate
-              size="64"
-              color="info"
-            >
-            </v-progress-circular>
-          </div>
-        </div>
-        <v-table>
-          <thead>
-            <tr>
-              <th class="text-left">Date Filed</th>
-              <th class="text-left">Inclusive Dates</th>
-              <th class="text-left">Days</th>
-              <th class="text-left">Type</th>
-              <th class="text-left">Reason</th>
-              <th class="text-left">Status</th>
-              <th class="text-left text-center">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr
-              v-for="item in data"
-              :key="item.id"
-            >
-              <td>{{ item.date_filed }}</td>
-              <td>{{ item.inclusive_date }}</td>
-              <td>{{ item.days }}</td>
-              <td>{{ item.type }}</td>
-              <td>{{ item.reason }}</td>
-              <td>
-                <v-chip v-if="item.status == 'P'" variant="outlined" color="primary">
-                  Pending
-                </v-chip>
-                <v-chip v-else-if="item.status == 'A'" variant="outlined" color="success">
-                  Approved
-                </v-chip>
-                <v-chip v-else-if="item.status == 'D'" variant="outlined" color="error">
-                  Rejected
-                </v-chip>
-                <v-chip v-else variant="outlined" color="warning">
-                  Voided
-                </v-chip>
-              </td>
-              <td class="text-center">
-                <VIcon class="table-icon" @click.prevent="openModal('V', item.id)"  size="20" start icon="mdi-eye"/>
-                <VIcon class="table-icon" @click.prevent="openModal('E', item.id)" v-if="item.status == 'P'" size="20" start icon="mdi-edit"/>
-                <VIcon class="table-icon" @click.prevent="voidLeave(item.id)" v-if="item.status == 'P'" size="20" start icon="mdi-close-box"/>
-              </td>
-            </tr>
-          </tbody>
-        </v-table>
-      </div>
-      <v-pagination
-        v-model="page"
-        :length="len"
-        rounded="circle"
-      />
-    </v-card-text>
+      <v-card-text style="padding: 0px; margin-top: -15px;">
+          <a-spin :spinning="loading" size="large">
+            <v-table style="min-height: 56.8vh">
+              <thead>
+                <tr>
+                  <th class="text-left">Date Filed</th>
+                  <th class="text-left">Inclusive Dates</th>
+                  <th class="text-left">Days</th>
+                  <th class="text-left">Type</th>
+                  <th class="text-left">Reason</th>
+                  <th class="text-left">Status</th>
+                  <th class="text-left text-center">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr
+                  v-for="item in data"
+                  :key="item.id"
+                >
+                  <td>{{ item.date_filed }}</td>
+                  <td>{{ item.inclusive_date }}</td>
+                  <td>{{ item.days }}</td>
+                  <td>{{ item.type }}</td>
+                  <td>{{ item.reason }}</td>
+                  <td>
+                    <v-chip v-if="item.status == 'P'" variant="outlined" color="primary">
+                      Pending
+                    </v-chip>
+                    <v-chip v-else-if="item.status == 'A'" variant="outlined" color="success">
+                      Approved
+                    </v-chip>
+                    <v-chip v-else-if="item.status == 'D'" variant="outlined" color="error">
+                      Rejected
+                    </v-chip>
+                    <v-chip v-else variant="outlined" color="warning">
+                      Voided
+                    </v-chip>
+                  </td>
+                  <td class="text-center">
+                    <VIcon class="table-icon" @click.prevent="openModal('V', item.id)"  size="20" start icon="mdi-eye"/>
+                    <VIcon class="table-icon" @click.prevent="openModal('E', item.id)" v-if="item.status == 'P'" size="20" start icon="mdi-edit"/>
+                    <VIcon class="table-icon" @click.prevent="voidLeave(item.id)" v-if="item.status == 'P'" size="20" start icon="mdi-close-box"/>
+                  </td>
+                </tr>
+              </tbody>
+            </v-table>
+          </a-spin>
+          <v-pagination
+            v-model="page"
+            :length="len"
+            rounded="circle"
+          />
+      </v-card-text>
   </v-card> 
   <v-dialog width="700px" v-model="modal" persistent>
     <v-card>
@@ -207,7 +197,7 @@ export default {
       allowHalfDay: false,
       crudLoading: false,
       typeOfLeavesLoading: false,
-      leavesCredits: null,
+      leavesCredits: {},
     }
   },
   watch: {
@@ -225,7 +215,7 @@ export default {
       this.getLeaves()
     }
   },
-  mounted() {
+  created() {
     this.getLeaves()
     this.getLeaveCreditsTotal()
   },
@@ -390,7 +380,7 @@ export default {
       }
     },
     async getLeaves(){
-      document.getElementById("overlay").style.display = "block" 
+      this.loading = true
       try{
         const res = await this.$secured.get("api/v2/leaves?page="+this.page+"&per_page="+this.perPage)
         this.data = res.data.data
@@ -398,7 +388,7 @@ export default {
       }catch(error){
         console.log(error.response)
       }
-      document.getElementById("overlay").style.display = "none";
+      this.loading = false
     },
     generateLength(total_count){
       let l = total_count / this.perPage
