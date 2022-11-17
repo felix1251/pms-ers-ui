@@ -8,6 +8,7 @@
       <v-divider />
       <div class="mt-4">
         <leave v-if="activeTab == 'leave'"/>
+        <undertime v-if="activeTab == 'undertime'"/>
         <overtime v-if="activeTab == 'overtime'"/>
         <offset v-if="activeTab == 'offset'"/>
         <official-business v-if="activeTab == 'official_business'"/>
@@ -16,6 +17,7 @@
 </template>
 <script>
 import Leave from '@/views/pages/request/Leave.vue'
+import Undertime from '@/views/pages/request/Undertime.vue'
 import Overtime from '@/views/pages/request/Overtime.vue'
 import Offset from '@/views/pages/request/Offset.vue'
 import OfficialBusiness from '@/views/pages/request/OfficialBusiness.vue'
@@ -67,6 +69,7 @@ export default {
     Overtime,
     Offset,
     OfficialBusiness,
+    Undertime,
   }
 }
 </script>
