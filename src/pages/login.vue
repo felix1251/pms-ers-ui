@@ -106,7 +106,7 @@ export default {
       try{
         const res = await this.$plain.post("api/v2/signin", secureStorage.getItem("userCredential"))
         this.$store.commit("setCurrentUser", { currentUser: res.data.employee, csrf: res.data.csrf});
-        this.$router.replace("/request")
+        this.$router.replace(secureStorage.getItem("prevPathOnRefresh" || "/"))
       }catch(error){
         secureStorage.setItem("userCredential", null)
       }

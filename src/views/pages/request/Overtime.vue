@@ -12,18 +12,8 @@
       </div>
     </template>
     <v-card-text style="padding: 0px">
-      <div style="position: relative; min-height: 63vh;">
-        <div id="overlay">
-          <div style="display: flex; align-items: center; justify-content: center; height: 100%">
-            <v-progress-circular
-              indeterminate
-              size="64"
-              color="info"
-            >
-            </v-progress-circular>
-          </div>
-        </div>
-        <v-table>
+      <a-spin :spinning="loading" size="large">
+        <v-table style="min-height: 63vh">
           <thead>
             <tr>
               <th class="text-left">Date Filed</th>
@@ -74,7 +64,7 @@
             </tr>
           </tbody>
         </v-table>
-      </div>
+      </a-spin>
       <v-pagination
         v-model="page"
         :length="len"
@@ -183,7 +173,7 @@ export default {
       len: 1,
       data: [],
       date: null,
-      loading: true,
+      loading: false,
       absolute: true,
       modal: false,
       modalType: null,
@@ -203,7 +193,7 @@ export default {
       this.getOvertimes()
     }
   },
-  mounted() {
+  created() {
     this.getOvertimes()
   },
   methods: {
@@ -333,7 +323,7 @@ export default {
       }
     },
     async getOvertimes(){
-      document.getElementById("overlay").style.display = "block" 
+      this.loading = true
       try{
         const res = await this.$secured.get("api/v2/overtimes?page="+this.page+"&per_page="+this.perPage)
         this.data = res.data.data
@@ -341,7 +331,7 @@ export default {
       }catch(error){
         console.log(error.response)
       }
-      document.getElementById("overlay").style.display = "none";
+      this.loading = false
     },
     generateLength(total_count){
       let l = total_count / this.perPage
