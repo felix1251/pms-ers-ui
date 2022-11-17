@@ -1,5 +1,3 @@
-<script setup>
-</script>
 <template>
   <VApp>
     <VLayout class="layout-wrapper layout-nav-type-vertical">
@@ -7,3 +5,11 @@
     </VLayout>
   </VApp>
 </template>
+<script>
+
+export default {
+  name: "App",
+}
+</script>
+
+
