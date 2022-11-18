@@ -52,7 +52,7 @@
                   <td class="text-center">
                     <VIcon class="table-icon" @click.prevent="openModal('V', item.id)"  size="20" start icon="mdi-eye"/>
                     <VIcon class="table-icon" @click.prevent="openModal('E', item.id)" v-if="item.status == 'P'" size="20" start icon="mdi-edit"/>
-                    <VIcon class="table-icon" @click.prevent="voidLeave(item.id)" v-if="item.status == 'P'" size="20" start icon="mdi-close-box"/>
+                    <VIcon class="table-icon" @click.prevent="voidUndertime(item.id)" v-if="item.status == 'P'" size="20" start icon="mdi-close-box"/>
                   </td>
                 </tr>
               </tbody>
@@ -171,17 +171,16 @@ export default {
     }
   },
   created() {
-    this.getLeaves()
+    this.getUndertimes()
   },
   methods: {
     openModal(type, id){
       this.modalType = type
       this.modal = true
-      this.getTypeOfLeaves()
       if(type == 'V' || type == 'E'){
         if(type == 'V') this.modalTitle = "VIEW UNDERTIME"
         if(type == 'E') this.modalTitle = "EDIT UNDERTIME"
-        this.getLeaveById(id)
+        this.getUndertimeById(id)
       }else{
         this.modalTitle = "CREATE UNDERTIME"
       }
@@ -193,26 +192,25 @@ export default {
       this.selectionRequired = false
       this.selectionRequiredMsg = ""
     },
-    voidLeave(id){
+    voidUndertime(id){
       Modal.confirm({
-        title: 'Void Leave',
+        title: 'Void Undertime',
         zIndex: 999999999,
-        content: "Are you sure you want to permanently void this leave?",
+        content: "Are you sure you want to permanently void this undertime?",
         okText: "Void",
         // eslint-disable-next-line @typescript-eslint/no-empty-function
         onOk: () => {
           return new Promise((resolve, reject) => {
-            this.$secured.delete("api/v2/leaves/"+id)
+            this.$secured.delete("api/v2/undertime/"+id)
               .then(()=>{
-                this.$notification["success"]({message: "Leave", description: "Leave successfully voided"});
+                this.$notification["success"]({message: "Undertime", description: "Undertime successfully voided"});
                 resolve()
-                this.getLeaves()
-                this.getLeaveCreditsTotal()
+                this.getUndertimes()
               })
               .catch(error => {
                 reject()
                 if(error.response && error.response.status == 401) return
-                this.$notification["error"]({message: "Leave", description: "Something is wrong"})
+                this.$notification["error"]({message: "Undertime", description: "Something is wrong"})
               })
           }).catch(() => console.log('Oops errors!'));
         },
@@ -222,40 +220,35 @@ export default {
     async edit(){
       this.selectionRequired = false
       this.selectionRequiredMsg = ""
+      this.crudLoading = true
       const { valid } = await this.$refs.form.validate()
       if(!this.date) { 
         this.selectionRequired = true 
         this.selectionRequiredMsg = "required"
       }
-      if (!this.date || !valid) return
-      this.crudLoading = true
+      if (!this.date || !valid) {
+        this.crudLoading = false
+        return
+      }
       let params = {
-        start_date: new Date(this.date[0]).toLocaleDateString("sv"),
-        end_date: new Date(this.date[1]).toLocaleDateString("sv"),
-        leave_type: this.form.leave_type,
+        start_time: new Date(this.date[0]),
+        end_time: new Date(this.date[1]),
         reason: this.form.reason,
-        half_day: this.form.half_day
       }
       try{
-        const res = await this.$secured.put("api/v2/leaves/"+this.form.id, {leave: params})
-        this.$notification["success"]({message: "Leave", description: "Leave successfully created"});
-        const le = this.typeOfLeaves.find(id => params.leave_type)
-        if(le.code == "SLWP" || le.code == "VLWP") this.getLeaveCreditsTotal()
+        const res = await this.$secured.put("api/v2/undertimes", {leave: params})
+        this.$notification["success"]({message: "Undertime", description: "Undertime successfully updated"});
         this.closeModal()
-        this.getLeaves()
+        this.getUndertimes()
       }catch (error){
         this.crudLoading = false
         if(error.response && error.response.status == 401) return
-        if (error.response.data.end_date) { 
+        if (error.response.data.end_time) { 
           this.selectionRequired = true 
-          this.selectionRequiredMsg = "date range overlapse or exist on previous records"
-          this.$notification["error"]({message: "Leave", description: error.response.data.end_date[0]})
-        }else if(error.response.data.credits){
-          this.selectionRequired = true 
-          this.selectionRequiredMsg = "Credits exceeds"
-          this.$notification["error"]({message: "Leave", description: error.response.data.credits[0]})
+          this.selectionRequiredMsg = "date/time range overlapse or exist on previous records"
+          this.$notification["error"]({message: "Undertime", description: error.response.data.end_time[0]})
         }else {
-          this.$notification["error"]({message: "Leave", description: "something is wrong"})
+          this.$notification["error"]({message: "Undertime", description: "something is wrong"})
         }
       }
       this.crudLoading = false
@@ -278,19 +271,18 @@ export default {
         end_time: new Date(this.date[1]),
         reason: this.form.reason,
       }
+
       try{
         const res = await this.$secured.post("api/v2/undertimes", {leave: params})
         this.$notification["success"]({message: "Undertime", description: "Undertime successfully created"});
-        const le = this.typeOfLeaves.find(item => item.id == params.leave_type)
-        if(le.code == "SLWP" || le.code == "VLWP") this.getLeaveCreditsTotal()
         this.closeModal()
-        this.getLeaves()
+        this.getUndertimes()
       }catch (error){
         this.crudLoading = false
         if(error.response && error.response.status == 401) return
         if (error.response.data.end_time) { 
           this.selectionRequired = true 
-          this.selectionRequiredMsg = "date range overlapse or exist on previous records"
+          this.selectionRequiredMsg = "date/time range overlapse or exist on previous records"
           this.$notification["error"]({message: "Undertime", description: error.response.data.end_time[0]})
         }else {
           this.$notification["error"]({message: "Undertime", description: "something is wrong"})
@@ -298,31 +290,20 @@ export default {
       }
       this.crudLoading = false
     },
-    async getTypeOfLeaves(){
-      this.typeOfLeavesLoading = true
+    async getUndertimeById(id){
       try{
-        const res = await this.$secured.get("api/v2/type_of_leaves")
-        this.typeOfLeaves = res.data
-      }catch(error){
-      }
-      this.typeOfLeavesLoading = false
-    },
-    async getLeaveById(id){
-      try{
-        const res = await this.$secured.get("api/v2/leaves/"+id)
+        const res = await this.$secured.get("api/v2/undertime/"+id)
         this.form.id = res.data.id
-        this.form.leave_type = Number(res.data.leave_type)
-        this.form.half_day = res.data.half_day
         this.form.reason = res.data.reason
-        this.date = [dayjs(res.data.start_date), dayjs(res.data.end_date)]
+        this.date = [dayjs(res.data.start_time), dayjs(res.data.end_time)]
       }catch(error){
         console.log(error.response)
       }
     },
-    async getLeaves(){
+    async getUndertimes(){
       this.loading = true
       try{
-        const res = await this.$secured.get("api/v2/leaves?page="+this.page+"&per_page="+this.perPage)
+        const res = await this.$secured.get("api/v2/undertimes?page="+this.page+"&per_page="+this.perPage)
         this.data = res.data.data
         this.generateLength(res.data.total_count)
       }catch(error){
@@ -336,7 +317,7 @@ export default {
         this.len = this.getValueBeforeDecimal(l) + 1
         return
       }
-      this.len = l
+      this.len = l || 1
     },
     checkInt(number){
       return Number.isInteger(number)
