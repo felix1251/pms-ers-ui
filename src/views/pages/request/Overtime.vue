@@ -17,7 +17,7 @@
           <thead>
             <tr>
               <th class="text-left">Date Filed</th>
-              <th class="text-left">Overtime Date/end_time</th>
+              <th class="text-left">Overtime Date/Time</th>
               <th class="text-left">Hours</th>
               <th class="text-left">Billable</th>
               <th class="text-left">Expected Output</th>
