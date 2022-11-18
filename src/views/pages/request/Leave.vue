@@ -231,7 +231,6 @@ export default {
     openModal(type, id){
       this.modalType = type
       this.modal = true
-      this.getTypeOfLeaves()
       if(type == 'V' || type == 'E'){
         if(type == 'V') this.modalTitle = "VIEW LEAVE"
         if(type == 'E') this.modalTitle = "EDIT LEAVE"
@@ -239,6 +238,7 @@ export default {
       }else{
         this.modalTitle = "CREATE LEAVE"
       }
+      this.getTypeOfLeaves()
     },
     closeModal(){
       this.modal = false
@@ -396,7 +396,7 @@ export default {
         this.len = this.getValueBeforeDecimal(l) + 1
         return
       }
-      this.len = l
+      this.len = l || 1
     },
     checkInt(number){
       return Number.isInteger(number)
