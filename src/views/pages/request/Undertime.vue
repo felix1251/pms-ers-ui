@@ -17,9 +17,8 @@
               <thead>
                 <tr>
                   <th class="text-left">Date Filed</th>
-                  <th class="text-left">Inclusive Dates</th>
-                  <th class="text-left">Days</th>
-                  <th class="text-left">Type</th>
+                  <th class="text-left">Undertime Date/Time</th>
+                  <th class="text-left">Hours</th>
                   <th class="text-left">Reason</th>
                   <th class="text-left">Status</th>
                   <th class="text-left text-center">Actions</th>
@@ -31,9 +30,8 @@
                   :key="item.id"
                 >
                   <td>{{ item.date_filed }}</td>
-                  <td>{{ item.inclusive_date }}</td>
-                  <td>{{ item.days }}</td>
-                  <td>{{ item.type }}</td>
+                  <td>{{ item.datetime }}</td>
+                  <td>{{ item.hours }}</td>
                   <td>{{ item.reason }}</td>
                   <td>
                     <v-chip v-if="item.status == 'P'" variant="outlined" color="primary">
@@ -80,11 +78,11 @@
               <v-row>
                 <v-col cols="12" sm="12" md="12">
                   <a-range-picker
+                    :show-time="{ format: 'hh:mm A' }"
                     v-model:value="date"
                     style="width: 100%"
                     size="large"
-                    format="MMM DD, YYYY"
-                    :rules="[v => !!v || 'required']"
+                    format="MMM DD, YYYY hh:mm A"
                     :disabled="modalType == 'V'"
                     :placeholder="['Start date*', 'Start date*']"
                     :getPopupContainer="(trigger) => trigger.parentNode"
@@ -103,7 +101,7 @@
                     variant="outlined" 
                     auto-grow 
                     label="Reason*" 
-                    rows="7" 
+                    rows="9" 
                     row-height="20"
                     :readonly="modalType == 'V'"
                     :rules="[v => !!v || 'required']"
@@ -201,7 +199,7 @@ export default {
         // eslint-disable-next-line @typescript-eslint/no-empty-function
         onOk: () => {
           return new Promise((resolve, reject) => {
-            this.$secured.delete("api/v2/undertime/"+id)
+            this.$secured.delete("api/v2/undertimes/"+id)
               .then(()=>{
                 this.$notification["success"]({message: "Undertime", description: "Undertime successfully voided"});
                 resolve()
@@ -236,7 +234,7 @@ export default {
         reason: this.form.reason,
       }
       try{
-        const res = await this.$secured.put("api/v2/undertimes", {leave: params})
+        const res = await this.$secured.put("api/v2/undertimes", {undertime: params})
         this.$notification["success"]({message: "Undertime", description: "Undertime successfully updated"});
         this.closeModal()
         this.getUndertimes()
@@ -273,7 +271,7 @@ export default {
       }
 
       try{
-        const res = await this.$secured.post("api/v2/undertimes", {leave: params})
+        const res = await this.$secured.post("api/v2/undertimes", {undertime: params})
         this.$notification["success"]({message: "Undertime", description: "Undertime successfully created"});
         this.closeModal()
         this.getUndertimes()
@@ -292,7 +290,7 @@ export default {
     },
     async getUndertimeById(id){
       try{
-        const res = await this.$secured.get("api/v2/undertime/"+id)
+        const res = await this.$secured.get("api/v2/undertimes/"+id)
         this.form.id = res.data.id
         this.form.reason = res.data.reason
         this.date = [dayjs(res.data.start_time), dayjs(res.data.end_time)]
@@ -337,7 +335,7 @@ export default {
     color: rgb(22,177,255)
   }
   tr > td {
-    max-width: 300px;
+    max-width: 350px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
