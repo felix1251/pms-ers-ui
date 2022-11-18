@@ -339,7 +339,7 @@ export default {
         this.len = this.getValueBeforeDecimal(l) + 1
         return
       }
-      this.len = l
+      this.len = l || 1
     },
     checkInt(number){
       return Number.isInteger(number)

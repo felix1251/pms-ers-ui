@@ -1,18 +1,16 @@
 <template>
-  <div>
     <v-tabs v-model="activeTab" show-arrows color="info">
-        <v-tab v-for="item in tabs" :key="item.tab" :value="item.tab">
-          {{ item.title }}
-        </v-tab>
-      </v-tabs>
-      <v-divider />
-      <div class="mt-4">
-        <leave v-if="activeTab == 'leave'"/>
-        <undertime v-if="activeTab == 'undertime'"/>
-        <overtime v-if="activeTab == 'overtime'"/>
-        <offset v-if="activeTab == 'offset'"/>
-        <official-business v-if="activeTab == 'official_business'"/>
-      </div>
+      <v-tab v-for="item in tabs" :key="item.tab" :value="item.tab">
+        {{ item.title }}
+      </v-tab>
+    </v-tabs>
+    <v-divider />
+    <div class="mt-4">
+      <leave v-if="activeTab == 'leave'"/>
+      <undertime v-if="activeTab == 'undertime'"/>
+      <overtime v-if="activeTab == 'overtime'"/>
+      <offset v-if="activeTab == 'offset'"/>
+      <official-business v-if="activeTab == 'official_business'"/>
     </div>
 </template>
 <script>
