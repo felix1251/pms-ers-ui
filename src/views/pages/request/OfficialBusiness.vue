@@ -363,6 +363,7 @@ export default {
   .table-icon:hover{
     color: rgb(22,177,255)
   }
+
   tr > td {
     max-width: 300px;
     white-space: nowrap;
@@ -375,17 +376,5 @@ export default {
   .ant-picker{
     border-radius: 8px;
     padding: 12px 16px;
-  }
-  #overlay {
-    position: absolute; /* Sit on top of the page content */
-    display: none; /* Hidden by default */
-    width: 100%; /* Full width (cover the whole page) */
-    height: 100%; /* Full height (cover the whole page) */
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-color: rgba(0,0,0,0.05); /* Black background with opacity */
-    z-index: 2; /* Specify a stack order in case you're using a different order for other elements */
   }
 </style>
